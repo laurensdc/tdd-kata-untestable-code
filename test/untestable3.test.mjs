@@ -1,5 +1,5 @@
 import { describe, test } from "vitest";
-import { expect } from "chai";
+import { expect, fail } from "chai";
 import { parsePeopleCsv } from "../src/untestable3.mjs";
 
 // example input:
@@ -8,10 +8,14 @@ import { parsePeopleCsv } from "../src/untestable3.mjs";
 // Yor,Forger,27,Female
 
 describe("Untestable 3: CSV file parsing", () => {
-  test("todo", async () => {
-    // TODO: write proper tests
-    try {
-      expect(await parsePeopleCsv("people.csv")).to.deep.equal([]);
-    } catch (e) {}
+  test("characterization test", async () => {
+    const got = await parsePeopleCsv("./test/people.csv");
+    const expected = [
+      { firstName: "firstName", lastName: "lastName", gender: "g", age: NaN },
+      { firstName: "Loid", lastName: "Forger", gender: "m" },
+      { firstName: "Anya", lastName: "Forger", gender: "f", age: 6 },
+      { firstName: "Yor", lastName: "Forger", gender: "f", age: 27 },
+    ];
+    expect(got).to.deep.equal(expected);
   });
 });
