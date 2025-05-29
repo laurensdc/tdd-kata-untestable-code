@@ -1,10 +1,11 @@
 import { parse } from "csv-parse/sync";
 
-export async function parsePeopleCsv(csvData) {
+export function parsePeopleCsv(csvData) {
   const records = parse(csvData, {
     skip_empty_lines: true,
     trim: true,
   });
+
   return records.map(([firstName, lastName, age, gender]) => {
     const person = {
       firstName,
