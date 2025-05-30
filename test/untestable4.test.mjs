@@ -3,16 +3,9 @@ import { PasswordService, PostgresUserDao } from "../src/untestable4.mjs";
 import argon2 from "@node-rs/argon2"
 
 describe("Untestable 4: enterprise application", () => {
-  let service;
-  beforeEach(() => {
-    service = new PasswordService();
-  });
-
-  afterEach(() => {
-    PostgresUserDao.getInstance().close();
-  });
-
   test("changed password works (characterization test)", async () => {
+    const service = new PasswordService();
+
     process.env.PGUSER = 'untestable'
     process.env.PGHOST = 'localhost'
     process.env.PGDATABASE = 'untestable'
@@ -33,5 +26,36 @@ describe("Untestable 4: enterprise application", () => {
     const updatedU = await users.getById(1)
     expect(updatedU.passwordHash).not.to.equal(passwordHash)
     expect(argon2.verifySync(updatedU.passwordHash, 'changed')).to.equal(true)
+
+    PostgresUserDao.getInstance().close();
   });
+
+  test("can DI userService to passwordService", async () => {
+    class mockUserDao {
+      user
+
+      constructor() {
+        const passwordHash = argon2.hashSync('password')
+        this.user = {
+          userId: 1,
+          passwordHash: passwordHash
+        }
+      }
+
+      async getById(userId) {
+        return this.user
+      }
+
+      async save(user) {
+        user = this.user
+      }
+    }
+
+    const userService = new mockUserDao();
+    const service = new PasswordService(userService)
+    service.changePassword(1, 'password', 'test')
+    const updatedUser = await userService.getById(1);
+    expect(argon2.verifySync(updatedUser.passwordHash, 'test')).to.equal(true)
+  });
+
 });

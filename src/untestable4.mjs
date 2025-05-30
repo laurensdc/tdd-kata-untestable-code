@@ -49,7 +49,17 @@ export class PostgresUserDao {
 }
 
 export class PasswordService {
-  users = PostgresUserDao.getInstance();
+  users
+
+  constructor(userDao) {
+    if (userDao) {
+      console.log('using this one')
+      this.users = userDao
+    } else {
+      console.log('using the wrong one')
+      this.users = PostgresUserDao.getInstance();
+    }
+  }
 
   async changePassword(userId, oldPassword, newPassword) {
     const user = await this.users.getById(userId);
