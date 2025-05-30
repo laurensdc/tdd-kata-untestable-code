@@ -17,7 +17,7 @@ describe("Untestable 4: enterprise application", () => {
     user
 
     constructor() {
-      const passwordHash = new mockHashingLibrary().hashSync('password')
+      const passwordHash = argon2.hashSync('password')
       this.user = {
         userId: 1,
         passwordHash: passwordHash
@@ -33,7 +33,7 @@ describe("Untestable 4: enterprise application", () => {
     }
   }
 
-  test.skip("changed password works (characterization test)", async () => {
+  test.skip("changed password works (characterization test, using DB connection and hashing lib)", async () => {
     const service = new PasswordService();
 
     process.env.PGUSER = 'untestable'
@@ -61,26 +61,24 @@ describe("Untestable 4: enterprise application", () => {
   });
 
   test("can DI userService to passwordService", async () => {
-    const hashingLibrary = new mockHashingLibrary()
     const userService = new mockUserDao();
-    const service = new PasswordService(userService, hashingLibrary)
+    const service = new PasswordService(userService)
 
     service.changePassword(1, 'password', 'test')
 
     const updatedUser = await userService.getById(1);
-    const verify = hashingLibrary.verifySync(updatedUser.passwordHash, 'test')
+    const verify = argon2.verifySync(updatedUser.passwordHash, 'test')
     expect(verify).to.equal(true)
   });
 
   test("can DI hashing library to passwordService", async () => {
     const userService = new mockUserDao();
-    const hashingLibrary = new mockHashingLibrary();
-    const service = new PasswordService(userService, hashingLibrary)
+    const service = new PasswordService(userService)
 
     service.changePassword(1, 'password', 'test')
 
     const updatedUser = await userService.getById(1);
-    const verify = hashingLibrary.verifySync(updatedUser.passwordHash, 'test')
+    const verify = argon2.verifySync(updatedUser.passwordHash, 'test')
     expect(verify).to.equal(true)
   })
 });
