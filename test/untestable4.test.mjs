@@ -60,7 +60,7 @@ describe("Untestable 4: enterprise application", () => {
     PostgresUserDao.getInstance().close();
   });
 
-  test("can DI userService to passwordService", async () => {
+  test("can change password", async () => {
     const userService = new mockUserDao();
     const service = new PasswordService(userService)
 
@@ -70,15 +70,3 @@ describe("Untestable 4: enterprise application", () => {
     const verify = argon2.verifySync(updatedUser.passwordHash, 'test')
     expect(verify).to.equal(true)
   });
-
-  test("can DI hashing library to passwordService", async () => {
-    const userService = new mockUserDao();
-    const service = new PasswordService(userService)
-
-    service.changePassword(1, 'password', 'test')
-
-    const updatedUser = await userService.getById(1);
-    const verify = argon2.verifySync(updatedUser.passwordHash, 'test')
-    expect(verify).to.equal(true)
-  })
-});
