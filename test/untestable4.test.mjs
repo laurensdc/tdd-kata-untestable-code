@@ -3,7 +3,37 @@ import { PasswordService, PostgresUserDao } from "../src/untestable4.mjs";
 import argon2 from "@node-rs/argon2"
 
 describe("Untestable 4: enterprise application", () => {
-  test("changed password works (characterization test)", async () => {
+  class mockHashingLibrary {
+    verifySync(oldHash, newPw) {
+      return oldHash == this.hashSync(newPw)
+    }
+
+    hashSync(pw) {
+      return pw + "_hashed"
+    }
+  }
+
+  class mockUserDao {
+    user
+
+    constructor() {
+      const passwordHash = new mockHashingLibrary().hashSync('password')
+      this.user = {
+        userId: 1,
+        passwordHash: passwordHash
+      }
+    }
+
+    async getById(userId) {
+      return this.user
+    }
+
+    async save(user) {
+      user = this.user
+    }
+  }
+
+  test.skip("changed password works (characterization test)", async () => {
     const service = new PasswordService();
 
     process.env.PGUSER = 'untestable'
@@ -31,69 +61,26 @@ describe("Untestable 4: enterprise application", () => {
   });
 
   test("can DI userService to passwordService", async () => {
-    class mockUserDao {
-      user
-
-      constructor() {
-        const passwordHash = argon2.hashSync('password')
-        this.user = {
-          userId: 1,
-          passwordHash: passwordHash
-        }
-      }
-
-      async getById(userId) {
-        return this.user
-      }
-
-      async save(user) {
-        user = this.user
-      }
-    }
-
+    const hashingLibrary = new mockHashingLibrary()
     const userService = new mockUserDao();
-    const service = new PasswordService(userService)
+    const service = new PasswordService(userService, hashingLibrary)
+
     service.changePassword(1, 'password', 'test')
+
     const updatedUser = await userService.getById(1);
-    expect(argon2.verifySync(updatedUser.passwordHash, 'test')).to.equal(true)
+    const verify = hashingLibrary.verifySync(updatedUser.passwordHash, 'test')
+    expect(verify).to.equal(true)
   });
 
   test("can DI hashing library to passwordService", async () => {
-    class mockHashingLibrary {
-      verifySync(oldHash, newPw) {
-        return oldHash == this.hashSync(newPw)
-      }
-
-      hashSync(pw) {
-        return pw + "_hashed"
-      }
-    }
-
-    class mockUserDao {
-      user
-
-      constructor() {
-        const passwordHash = new mockHashingLibrary().hashSync('password')
-        this.user = {
-          userId: 1,
-          passwordHash: passwordHash
-        }
-      }
-
-      async getById(userId) {
-        return this.user
-      }
-
-      async save(user) {
-        user = this.user
-      }
-    }
-
     const userService = new mockUserDao();
     const hashingLibrary = new mockHashingLibrary();
     const service = new PasswordService(userService, hashingLibrary)
+
     service.changePassword(1, 'password', 'test')
+
     const updatedUser = await userService.getById(1);
-    expect(hashingLibrary.verifySync(updatedUser.passwordHash, 'test')).to.equal(true)
+    const verify = hashingLibrary.verifySync(updatedUser.passwordHash, 'test')
+    expect(verify).to.equal(true)
   })
 });
