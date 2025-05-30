@@ -50,23 +50,29 @@ export class PostgresUserDao {
 
 export class PasswordService {
   users
+  hashingLibrary
 
-  constructor(userDao) {
+  constructor(userDao, hashingLibrary) {
     if (userDao) {
-      console.log('using this one')
       this.users = userDao
     } else {
-      console.log('using the wrong one')
       this.users = PostgresUserDao.getInstance();
     }
+
+    if (hashingLibrary) {
+      this.hashingLibrary = hashingLibrary
+    } else {
+      this.hashingLibrary = argon2
+    }
+
   }
 
   async changePassword(userId, oldPassword, newPassword) {
     const user = await this.users.getById(userId);
-    if (!argon2.verifySync(user.passwordHash, oldPassword)) {
+    if (!this.hashingLibrary.verifySync(user.passwordHash, oldPassword)) {
       throw new Error("wrong old password");
     }
-    user.passwordHash = argon2.hashSync(newPassword);
+    user.passwordHash = this.hashingLibrary.hashSync(newPassword);
     await this.users.save(user);
   }
 }

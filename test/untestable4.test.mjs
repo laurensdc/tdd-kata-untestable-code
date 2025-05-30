@@ -58,4 +58,42 @@ describe("Untestable 4: enterprise application", () => {
     expect(argon2.verifySync(updatedUser.passwordHash, 'test')).to.equal(true)
   });
 
+  test("can DI hashing library to passwordService", async () => {
+    class mockHashingLibrary {
+      verifySync(oldHash, newPw) {
+        return oldHash == this.hashSync(newPw)
+      }
+
+      hashSync(pw) {
+        return pw + "_hashed"
+      }
+    }
+
+    class mockUserDao {
+      user
+
+      constructor() {
+        const passwordHash = new mockHashingLibrary().hashSync('password')
+        this.user = {
+          userId: 1,
+          passwordHash: passwordHash
+        }
+      }
+
+      async getById(userId) {
+        return this.user
+      }
+
+      async save(user) {
+        user = this.user
+      }
+    }
+
+    const userService = new mockUserDao();
+    const hashingLibrary = new mockHashingLibrary();
+    const service = new PasswordService(userService, hashingLibrary)
+    service.changePassword(1, 'password', 'test')
+    const updatedUser = await userService.getById(1);
+    expect(hashingLibrary.verifySync(updatedUser.passwordHash, 'test')).to.equal(true)
+  })
 });
